@@ -1,23 +1,23 @@
 package checks;
 
-import nekogochan.Check;
+import nekogochan.StrictCheck;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class LengthTest {
-  Check check = Check.length(10);
+  StrictCheck check = StrictCheck.length(10);
 
   @Test
   void true_IfInputLengthMoreThen10() {
     var str = "some_string";
-    assertTrue(check.test(str));
+    assertTrue(check.check(str));
   }
 
   @Test
   void false_IfInputLengthLessThen10() {
     var str = "some";
-    assertFalse(check.test(str));
+    assertFalse(check.check(str));
   }
 }

@@ -1,21 +1,30 @@
-import nekogochan.PasswordChecker;
-import nekogochan.Preprocessor;
+import nekogochan.GradeCheck;
+import nekogochan.StrictCheck;
 
 import java.io.IOException;
+import java.util.function.IntPredicate;
 import java.util.stream.Stream;
 
-import static nekogochan.Check.fileNotContains;
-import static nekogochan.Check.length;
-
 public class Main {
-  public static void main(String[] args) throws IOException {
-    var checker = new PasswordChecker.Builder()
-      .addChecker("length", length(10))
-      .addChecker("password_database", fileNotContains("10-million-password-list-top-1000000.txt"))
-      .build();
 
-    Stream.of("fireman10273")
-          .map(s -> s + ": " + checker.check(s))
-          .forEach(System.out::println);
+  static IntPredicate lessThen(int i) {
+    return a -> a < i;
+  }
+
+  static IntPredicate moreThen(int i) {
+    return a -> a > i;
+  }
+
+  public static void main(String[] args) throws IOException {
+    var check = Stream.of(GradeCheck.length().or(5, moreThen(5)).multiply(10).subtract(20),
+                          GradeCheck.digitCount().or(0, moreThen(3)).multiply(10),
+                          GradeCheck.specialsCount().or(3, moreThen(3)).multiply(15),
+                          GradeCheck.uppercaseCount().or(3, moreThen(3)).multiply(10))
+                      .reduce(GradeCheck::andAdd).get()
+                      .or(100, moreThen(100))
+                      .toStrictCheck(0)
+                      .and(StrictCheck.fileNotContains("10-million-password-list-top-1000000.txt"));
+
+    System.out.println("check = " + check.check("fuckyou"));
   }
 }
