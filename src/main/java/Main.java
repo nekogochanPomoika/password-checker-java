@@ -1,11 +1,20 @@
 import nekogochan.GradeCheck;
 import nekogochan.StrictCheck;
+import nekogochan.impl.GradeChecks;
+import nekogochan.impl.StandardChecks;
+import nekogochan.impl.StrictChecks;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.BiPredicate;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
+
+  static Path passwordsListPath = Path.of("10-million-password-list-top-1000000.txt");
 
   static IntPredicate lessThen(int i) {
     return a -> a < i;
@@ -15,16 +24,20 @@ public class Main {
     return a -> a > i;
   }
 
-  public static void main(String[] args) throws IOException {
-    var check = Stream.of(GradeCheck.length().or(5, moreThen(5)).multiply(10).subtract(20),
-                          GradeCheck.digitCount().or(0, moreThen(3)).multiply(10),
-                          GradeCheck.specialsCount().or(3, moreThen(3)).multiply(15),
-                          GradeCheck.uppercaseCount().or(3, moreThen(3)).multiply(10))
-                      .reduce(GradeCheck::andAdd).get()
-                      .or(100, moreThen(100))
-                      .toStrictCheck(0)
-                      .and(StrictCheck.fileNotContains("10-million-password-list-top-1000000.txt"));
 
-    System.out.println("check = " + check.check("fuckyou"));
+  public static void main(String[] args) throws IOException {
+
+    var passwords = Files.lines(passwordsListPath).collect(Collectors.toSet());
+
+    var standardCheck = StandardChecks.standardLengthPrimaryCheck();
+//                                      .and(StandardChecks.notMatchWithPasswordsDbCheck(passwordsListPath, 4));
+
+    Stream.of("passwordwithbiglength",
+              "small",
+              "STRSTR1!_",
+              "megashit",
+              "MEGASHIT123_")
+          .map(p -> p + " -> " + standardCheck.check(p))
+          .forEach(System.out::println);
   }
 }

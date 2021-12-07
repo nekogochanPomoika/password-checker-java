@@ -3,7 +3,6 @@ package nekogochan;
 import java.util.function.IntPredicate;
 import java.util.function.IntSupplier;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 public interface GradeCheck {
 
@@ -30,65 +29,53 @@ public interface GradeCheck {
                 that.check(s);
   }
 
-  default GradeCheck or(int that, Predicate<String> predicate) {
-    return s -> predicate.test(s) ? that : this.check(s);
+  default GradeCheck limitTop(int limit) {
+    return s -> Math.min(limit, check(s));
   }
 
-  default GradeCheck or(int that, IntPredicate predicate) {
+  default GradeCheck limitBottom(int limit) {
+    return s -> Math.max(limit, check(s));
+  }
+
+  default GradeCheck limit(int bottom, int top) {
+    return s -> Math.min(Math.max(check(s), bottom), top);
+  }
+
+  default GradeCheck or(int i, Predicate<String> condition) {
+    return s -> condition.test(s) ? i : this.check(s);
+  }
+
+  default GradeCheck or(int i, IntPredicate condition) {
+    return orGet(() -> i, condition);
+  }
+
+  default GradeCheck orGet(IntSupplier i, Predicate<String> condition) {
+    return s -> condition.test(s) ? i.getAsInt() : this.check(s);
+  }
+
+  default GradeCheck orGet(IntSupplier i, IntPredicate condition) {
     return s -> {
       var val = this.check(s);
-      if (predicate.test(val)) {
-        val = that;
+      if (condition.test(val)) {
+        return i.getAsInt();
       }
       return val;
     };
   }
 
-  default GradeCheck orGet(IntSupplier that, Predicate<String> predicate) {
-    return s -> predicate.test(s) ? that.getAsInt() : this.check(s);
+  default GradeCheck orCheck(GradeCheck that, Predicate<String> condition) {
+    return s -> (condition.test(s) ? that : this).check(s);
   }
 
-  default GradeCheck orCheck(GradeCheck that, Predicate<String> predicate) {
-    return s -> (predicate.test(s) ? that : this).check(s);
-  }
-
-  default StrictCheck toStrictCheck(int threshold) {
-    return s -> this.check(s) >= threshold;
+  default GradeCheck withPreprocessor(Preprocessor preprocessor) {
+    return s -> this.check(preprocessor.apply(s));
   }
 
   static GradeCheck of(GradeCheck that) {
     return that;
   }
 
-  static GradeCheck length() {
-    return String::length;
-  }
-
-  static GradeCheck lowercaseCount() {
-    return matchesCount("[a-z]");
-  }
-
-  static GradeCheck uppercaseCount() {
-    return matchesCount("[A-Z]");
-  }
-
-  static GradeCheck digitCount() {
-    return matchesCount("\\d");
-  }
-
-  static GradeCheck specialsCount() {
-    return matchesCount("[!@#$%^&*()\\-+=\\\\|/.,:;\\[\\]{}]");
-  }
-
-  static GradeCheck matchesCount(String regex) {
-    var pattern = Pattern.compile(regex);
-    return s -> {
-      var m = pattern.matcher(s);
-      var i = 0;
-      while (m.find()) {
-        i++;
-      }
-      return i;
-    };
+  default StrictCheck toStrict(int threshold) {
+    return s -> this.check(s) >= threshold;
   }
 }
